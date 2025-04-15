@@ -1,0 +1,4 @@
+.venv
+.gradio
+chroma_db
+vectorstore
