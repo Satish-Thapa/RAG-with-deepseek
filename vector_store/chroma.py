@@ -23,7 +23,6 @@ class ChromaDBHandler:
         return self.model.encode(texts).tolist()
 
     def create_collection(self, collection_name: str) -> chromadb.Collection:
-        """Create or get existing collection"""
         try:
             return self.client.get_or_create_collection(name=collection_name)
         except ValueError:
@@ -50,7 +49,6 @@ class ChromaDBHandler:
 
     def query_collection(self, collection_name: str, query_texts: List[str],
                          n_results: int = 5) -> Dict:
-        """Query documents using embeddings"""
         collection = self.client.get_collection(name=collection_name)
         query_embeddings = self.embed(query_texts)
 
@@ -61,19 +59,15 @@ class ChromaDBHandler:
         return results
 
     def delete_collection(self, collection_name: str) -> None:
-        """Delete an entire collection"""
         self.client.delete_collection(collection_name)
 
     def delete_documents(self, collection_name: str, ids: List[str]) -> None:
-        """Delete specific documents"""
         collection = self.client.get_collection(name=collection_name)
         collection.delete(ids=ids)
 
     def get_collection_items(self, collection_name: str) -> Dict:
-        """Get all items in a collection"""
         collection = self.client.get_collection(name=collection_name)
         return collection.get()
 
     def list_collections(self) -> List[str]:
-        """List all available collections"""
         return [col.name for col in self.client.list_collections()]
