@@ -7,8 +7,8 @@ from llm.main import DeepSeekChat, ChatMessage, ChatResponse
 router = APIRouter()
 chat_client = DeepSeekChat()
 
-class Question(BaseModel):
-    question: str
+class Context(BaseModel):
+    context: str
 
 class QueryRequest(BaseModel):
     query: str
@@ -17,11 +17,11 @@ class QueryRequest(BaseModel):
 async def root():
     return {"message": "Hello World"}
 
-@router.post("/questions")
-async def add_questions(questions: List[Question]):
-    documents = [q.question for q in questions]
+@router.post("/context")
+async def add_context(contexts: List[Context]):
+    documents = [q.question for q in contexts]
     chroma_client.add_documents("questions_collection", documents)
-    return {"received_questions": questions}
+    return {"received_questions": contexts}
 
 @router.get("/collections")
 async def get_collections():
