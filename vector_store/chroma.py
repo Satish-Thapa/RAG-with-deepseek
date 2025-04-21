@@ -1,11 +1,14 @@
 import chromadb
 from chromadb.config import Settings
+from sentence_transformers import SentenceTransformer
 from typing import List, Optional, Dict
-import os
+import uuid
+
 
 class ChromaDBHandler:
     def __init__(self, host: str = "localhost", port: int = 8000):
         """Initialize ChromaDB client to connect to Docker container"""
+        self.model = SentenceTransformer('all-MiniLM-L6-v2')
         self.client = chromadb.HttpClient(
             host=host,
             port=port,
@@ -15,35 +18,44 @@ class ChromaDBHandler:
             )
         )
 
+    def embed(self, texts: List[str]) -> List[List[float]]:
+        """Generate embeddings for a list of texts"""
+        return self.model.encode(texts).tolist()
+
     def create_collection(self, collection_name: str) -> chromadb.Collection:
-        """Create a new collection or get existing one"""
+        """Create or get existing collection"""
         try:
-            return self.client.create_collection(name=collection_name)
+            return self.client.get_or_create_collection(name=collection_name)
         except ValueError:
             return self.client.get_collection(name=collection_name)
 
-    def add_documents(self, collection_name: str, documents: List[str], 
-                     metadatas: Optional[List[Dict]] = None, 
-                     ids: Optional[List[str]] = None) -> None:
-        """Add documents to a collection"""
+    def add_documents(self, collection_name: str, documents: List[str],
+                      metadatas: Optional[List[Dict]] = None,
+                      ids: Optional[List[str]] = None) -> None:
+        """Add documents with embeddings"""
         collection = self.create_collection(collection_name)
+        embeddings = self.embed(documents)
+
         if ids is None:
-            ids = [str(i) for i in range(len(documents))]
+            ids = [str(uuid.uuid4()) for _ in range(len(documents))]
         if metadatas is None:
             metadatas = [{} for _ in documents]
-        
+
         collection.add(
             documents=documents,
-            metadatas=metadatas,
-            ids=ids
+            embeddings=embeddings,
+            ids=ids,
+            # metadatas=metadatas
         )
 
-    def query_collection(self, collection_name: str, query_texts: List[str], 
-                        n_results: int = 5) -> Dict:
-        """Query documents from a collection"""
-        collection = self.client.get_collection(collection_name)
+    def query_collection(self, collection_name: str, query_texts: List[str],
+                         n_results: int = 5) -> Dict:
+        """Query documents using embeddings"""
+        collection = self.client.get_collection(name=collection_name)
+        query_embeddings = self.embed(query_texts)
+
         results = collection.query(
-            query_texts=query_texts,
+            query_embeddings=query_embeddings,
             n_results=n_results
         )
         return results
@@ -53,13 +65,13 @@ class ChromaDBHandler:
         self.client.delete_collection(collection_name)
 
     def delete_documents(self, collection_name: str, ids: List[str]) -> None:
-        """Delete specific documents from a collection"""
-        collection = self.client.get_collection(collection_name)
+        """Delete specific documents"""
+        collection = self.client.get_collection(name=collection_name)
         collection.delete(ids=ids)
 
     def get_collection_items(self, collection_name: str) -> Dict:
         """Get all items in a collection"""
-        collection = self.client.get_collection(collection_name)
+        collection = self.client.get_collection(name=collection_name)
         return collection.get()
 
     def list_collections(self) -> List[str]:

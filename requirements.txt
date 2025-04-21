@@ -1,7 +1,10 @@
-fastapi[standard]==0.113.0
-pydantic==2.8.0
+fastapi[all]
+pydantic
 langchain
-langchain-community
-chromadb
-PyMuPDF
+fitz
+langchain_community
 ollama
+chromadb
+sentence-transformers
+python-decouple
+deepseek-ai
