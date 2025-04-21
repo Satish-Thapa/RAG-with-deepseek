@@ -12,7 +12,6 @@ class Question(BaseModel):
 
 class QueryRequest(BaseModel):
     query: str
-    n_results: int = 5
 
 @router.get("/")
 async def root():
@@ -38,9 +37,21 @@ async def search_questions(query_request: QueryRequest):
         results = chroma_client.query_collection(
             "questions_collection",
             query_texts=[query_request.query],
-            n_results=query_request.n_results
+            n_results=5
         )
-        return {"results": results}
+        
+        all_documents = [doc for docs in results["documents"] for doc in docs]
+        context = "\n".join(all_documents)
+        
+        chat_response = await chat_client.chat(ChatMessage(
+            question=query_request.query,
+            context=context
+        ))
+        
+        return {
+            "results": results,
+            "ai_response": chat_response.response
+        }
     except ValueError:
         return {"results": [], "message": "No matching questions found or collection does not exist"}
 
