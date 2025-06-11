@@ -19,7 +19,7 @@ async def root():
 
 @router.post("/context")
 async def add_context(contexts: List[Context]):
-    documents = [q.question for q in contexts]
+    documents = [q.context for q in contexts]
     chroma_client.add_documents("questions_collection", documents)
     return {"received_questions": contexts}
 
